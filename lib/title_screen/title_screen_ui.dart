@@ -38,6 +38,17 @@ class TitleScreenUi extends StatelessWidget {
                   onDifficultyFocused: onDifficultyFoucused),
             ),
           ),
+          BottomRight(
+            child: UiScaler(
+                alignment: Alignment.bottomRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    bottom: 20,
+                    right: 40,
+                  ),
+                  child: _StartBtn(onpressed: () {}),
+                )),
+          ),
         ],
       ),
     );
@@ -178,6 +189,59 @@ class _DifficultiBtn extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          );
+        });
+  }
+}
+
+class _StartBtn extends StatefulWidget {
+  const _StartBtn({required this.onpressed});
+  final VoidCallback onpressed;
+
+  @override
+  State<_StartBtn> createState() => __StartBtnState();
+}
+
+class __StartBtnState extends State<_StartBtn> {
+  AnimationController? _btnAnim;
+  bool _wasHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return FocusableControlBuilder(
+        cursor: SystemMouseCursors.click,
+        onPressed: () => widget.onpressed,
+        builder: (_, state) {
+          if ((state.isHovered || state.isFocused) &&
+              !_wasHovered &&
+              _btnAnim?.status != AnimationStatus.forward) {
+            _btnAnim?.forward(from: 0);
+          }
+          _wasHovered = (state.isHovered || state.isFocused);
+          return SizedBox(
+            width: 520,
+            height: 100,
+            child: Stack(
+              children: [
+                Positioned.fill(child: Image.asset(AssetPaths.titleStartBtn)),
+                if (state.isHovered || state.isFocused) ...[
+                  Positioned.fill(
+                      child: Image.asset(AssetPaths.titleStartBtnHover)),
+                ],
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        'START MISSION',
+                        style: TextStyles.btn
+                            .copyWith(fontSize: 24, letterSpacing: 18),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           );
         });
