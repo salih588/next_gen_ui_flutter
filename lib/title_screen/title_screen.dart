@@ -2,18 +2,39 @@ import 'package:flutter/material.dart';
 
 import '../assets.dart';
 import '../styles.dart';
+import 'title_screen_ui.dart';
 
-class TitleScreen extends StatelessWidget {
+class TitleScreen extends StatefulWidget {
   const TitleScreen({super.key});
+
+  @override
+  State<TitleScreen> createState() => _TitleScreenState();
+}
+
+class _TitleScreenState extends State<TitleScreen> {
+  Color get _emitColor =>
+      AppColors.emitColors[_difficultyOverride ?? _difficulty];
+
+  Color get _orbColor =>
+      AppColors.orbColors[_difficultyOverride ?? _difficulty];
+
+  int? _difficultyOverride;
+
+  int _difficulty = 0;
+
+  void _handleDifficultyPressed(int value) {
+    setState(() => _difficulty = value);
+  }
+
+  void _handleDifficultyFocused(int? value) {
+    setState(() => _difficultyOverride = value);
+  }
 
   final _finalRecieveLightAmt = 0.7;
   final _finalEmitLightAmt = 0.5;
 
   @override
   Widget build(BuildContext context) {
-    final orbColor = AppColors.orbColors[0];
-    final emitColor = AppColors.emitColors[0];
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: Center(
@@ -24,25 +45,25 @@ class TitleScreen extends StatelessWidget {
 
             /// Bg-Receive
             _LitImage(
-                color: orbColor,
+                color: _orbColor,
                 imgSrc: AssetPaths.titleBgReceive,
                 lightAmt: _finalRecieveLightAmt),
 
             /// Mg-Base
             _LitImage(
-                color: orbColor,
+                color: _orbColor,
                 imgSrc: AssetPaths.titleMgBase,
                 lightAmt: _finalRecieveLightAmt),
 
             /// Mg-Receive
             _LitImage(
-                color: orbColor,
+                color: _orbColor,
                 imgSrc: AssetPaths.titleMgReceive,
                 lightAmt: _finalRecieveLightAmt),
 
             /// Mg-Emit
             _LitImage(
-                color: emitColor,
+                color: _emitColor,
                 imgSrc: AssetPaths.titleMgEmit,
                 lightAmt: _finalEmitLightAmt),
 
@@ -51,15 +72,23 @@ class TitleScreen extends StatelessWidget {
 
             /// Fg-Receive
             _LitImage(
-                color: orbColor,
+                color: _orbColor,
                 imgSrc: AssetPaths.titleFgReceive,
                 lightAmt: _finalRecieveLightAmt),
 
             /// Fg-Emit
             _LitImage(
-                color: emitColor,
+                color: _emitColor,
                 imgSrc: AssetPaths.titleFgEmit,
                 lightAmt: _finalEmitLightAmt),
+
+            Positioned.fill(
+              child: TitleScreenUi(
+                difficulty: _difficulty,
+                onDifficultyPressed: _handleDifficultyPressed,
+                onDifficultyFoucused: _handleDifficultyFocused,
+              ),
+            )
           ],
         ),
       ),
