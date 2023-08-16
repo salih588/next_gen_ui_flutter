@@ -1,5 +1,6 @@
 import 'package:extra_alignments/extra_alignments.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:focusable_control_builder/focusable_control_builder.dart';
 import 'package:gap/gap.dart';
 
@@ -88,11 +89,14 @@ class _TitleText extends StatelessWidget {
               height: 65,
             ),
           ],
-        ),
+        ).animate().fadeIn(delay: .8.seconds, duration: .7.seconds),
         Text(
           'INTO THE UNKNOWN',
           style: TextStyles.h3,
-        )
+        ).animate().fadeIn(
+              delay: 1.seconds,
+              duration: .7.seconds,
+            )
       ],
     );
   }
@@ -119,19 +123,37 @@ class _DifficultiBtns extends StatelessWidget {
           selected: difficulty == 0,
           onHover: (over) => onDifficultyFocused(over ? 0 : null),
           onPressed: () => onDifficultyPressed(0),
-        ),
+        )
+            .animate()
+            .fadeIn(
+              delay: 1.3.seconds,
+              duration: .35.seconds,
+            )
+            .slide(begin: const Offset(0, .2)),
         _DifficultiBtn(
           label: 'Normal',
           selected: difficulty == 1,
           onHover: (over) => onDifficultyFocused(over ? 1 : null),
           onPressed: () => onDifficultyPressed(1),
-        ),
+        )
+            .animate()
+            .fadeIn(
+              delay: 1.5.seconds,
+              duration: .35.seconds,
+            )
+            .slide(begin: const Offset(0, .2)),
         _DifficultiBtn(
           label: 'Hardcore',
           selected: difficulty == 2,
           onHover: (over) => onDifficultyFocused(over ? 2 : null),
           onPressed: () => onDifficultyPressed(2),
-        ),
+        )
+            .animate()
+            .fadeIn(
+              delay: 1.7.seconds,
+              duration: .35.seconds,
+            )
+            .slide(begin: const Offset(0, .2)),
       ],
     );
   }
@@ -164,10 +186,16 @@ class _DifficultiBtn extends StatelessWidget {
               height: 60,
               child: Stack(
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                        color: const Color(0xFF00D1FF).withOpacity(.1),
-                        border: Border.all(color: Colors.white, width: 5)),
+                  AnimatedOpacity(
+                    opacity: (!selected && (state.isHovered || state.isFocused))
+                        ? 1
+                        : 0,
+                    duration: .3.seconds,
+                    child: Container(
+                      decoration: BoxDecoration(
+                          color: const Color(0xFF00D1FF).withOpacity(.1),
+                          border: Border.all(color: Colors.white, width: 5)),
+                    ),
                   ),
                   if (state.isHovered || state.isFocused) ...[
                     Container(
@@ -242,8 +270,14 @@ class __StartBtnState extends State<_StartBtn> {
                   ),
                 ),
               ],
-            ),
-          );
+            ).animate(autoPlay: false, onInit: (c) => _btnAnim = c).shimmer(
+                  duration: .7.seconds,
+                  color: Colors.black,
+                ),
+          )
+              .animate()
+              .fadeIn(delay: 2.3.seconds)
+              .slide(begin: const Offset(0, .2));
         });
   }
 }
