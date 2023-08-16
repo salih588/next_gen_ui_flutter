@@ -1,7 +1,13 @@
+import 'dart:math';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../assets.dart';
+import '../orb_shader/orb_shader_config.dart';
+import '../orb_shader/orb_shader_widget.dart';
 import '../styles.dart';
 import 'title_screen_ui.dart';
 
@@ -12,7 +18,18 @@ class TitleScreen extends StatefulWidget {
   State<TitleScreen> createState() => _TitleScreenState();
 }
 
-class _TitleScreenState extends State<TitleScreen> {
+class _TitleScreenState extends State<TitleScreen>
+    with SingleTickerProviderStateMixin {
+  final _orbKey = GlobalKey<OrbShaderWidgetState>();
+
+  final _minRecieveLightAmt = .35;
+  final _maxRecieveLightAmt = .7;
+
+  final _minEmitLightAmt = .5;
+  final _maxEmitLightAmt = 1;
+
+  var _mousePose = Offset.zero;
+
   Color get _emitColor =>
       AppColors.emitColors[_difficultyOverride ?? _difficulty];
 
@@ -22,17 +39,86 @@ class _TitleScreenState extends State<TitleScreen> {
   int? _difficultyOverride;
 
   int _difficulty = 0;
+  double _orbEnergy = 0;
+  double _minOrbEnergy = 0;
+
+  double get _finalRecieveLightAmt {
+    final light =
+        lerpDouble(_minRecieveLightAmt, _maxRecieveLightAmt, _orbEnergy) ?? 0;
+    return light + _pulseEffect.value * .05 * _orbEnergy;
+  }
+
+  double get _finalEmitLightAmt {
+    return lerpDouble(_minEmitLightAmt, _maxEmitLightAmt, _orbEnergy) ?? 0;
+  }
+
+  late final _pulseEffect = AnimationController(
+      vsync: this,
+      duration: _getRndPulseDuration(),
+      lowerBound: -1,
+      upperBound: 1);
+
+  Duration _getRndPulseDuration() => 100.ms + 200.ms * Random().nextDouble();
+
+  double _getMinEnergyForDifficulty(int difficulty) {
+    if (difficulty == 1) {
+      return .3;
+    } else if (difficulty == 2) {
+      return .6;
+    }
+    return 0;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseEffect.forward();
+    _pulseEffect.addListener(_handlePulseEffectUpdated);
+  }
+
+  void _handlePulseEffectUpdated() {
+    if (_pulseEffect.status == AnimationStatus.completed) {
+      _pulseEffect.reverse();
+      _pulseEffect.duration = _getRndPulseDuration();
+    } else if (_pulseEffect.status == AnimationStatus.dismissed) {
+      _pulseEffect.duration = _getRndPulseDuration();
+      _pulseEffect.forward();
+    }
+  }
 
   void _handleDifficultyPressed(int value) {
     setState(() => _difficulty = value);
+    _bumbMinEnergy();
   }
+
+  Future<void> _bumbMinEnergy([double amount = 0.1]) async {
+    setState(() {
+      _minOrbEnergy = _getMinEnergyForDifficulty(_difficulty) + amount;
+    });
+    await Future<void>.delayed(.2.seconds);
+    setState(() {
+      _minOrbEnergy = _getMinEnergyForDifficulty(_difficulty);
+    });
+  }
+
+  void _handleStartPressed() => _bumbMinEnergy(0.3);
 
   void _handleDifficultyFocused(int? value) {
-    setState(() => _difficultyOverride = value);
+    setState(() {
+      _difficultyOverride = value;
+      if (value == null) {
+        _minOrbEnergy = _getMinEnergyForDifficulty(_difficulty);
+      } else {
+        _minOrbEnergy = _getMinEnergyForDifficulty(value);
+      }
+    });
   }
 
-  final _finalRecieveLightAmt = 0.7;
-  final _finalEmitLightAmt = 0.5;
+  void _handleMouseMove(PointerHoverEvent e) {
+    setState(() {
+      _mousePose = e.localPosition;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,24 +139,47 @@ class _TitleScreenState extends State<TitleScreen> {
                   _LitImage(
                       color: orbColor,
                       imgSrc: AssetPaths.titleBgReceive,
+                      pulseEffect: _pulseEffect,
                       lightAmt: _finalRecieveLightAmt),
+
+                  Positioned.fill(
+                      child: Stack(
+                    children: [
+                      OrbShaderWidget(
+                        key: _orbKey,
+                        config: OrbShaderConfig(
+                          ambientLightColor: orbColor,
+                          materialColor: orbColor,
+                          lightColor: orbColor,
+                        ),
+                        mousePos: _mousePose,
+                        minEnergy: _minOrbEnergy,
+                        onUpdate: (energy) => setState(() {
+                          _orbEnergy = energy;
+                        }),
+                      )
+                    ],
+                  )),
 
                   /// Mg-Base
                   _LitImage(
                       color: orbColor,
                       imgSrc: AssetPaths.titleMgBase,
+                      pulseEffect: _pulseEffect,
                       lightAmt: _finalRecieveLightAmt),
 
                   /// Mg-Receive
                   _LitImage(
                       color: orbColor,
                       imgSrc: AssetPaths.titleMgReceive,
+                      pulseEffect: _pulseEffect,
                       lightAmt: _finalRecieveLightAmt),
 
                   /// Mg-Emit
                   _LitImage(
                       color: emitColor,
                       imgSrc: AssetPaths.titleMgEmit,
+                      pulseEffect: _pulseEffect,
                       lightAmt: _finalEmitLightAmt),
 
                   /// Fg-Rocks
@@ -80,12 +189,14 @@ class _TitleScreenState extends State<TitleScreen> {
                   _LitImage(
                       color: orbColor,
                       imgSrc: AssetPaths.titleFgReceive,
+                      pulseEffect: _pulseEffect,
                       lightAmt: _finalRecieveLightAmt),
 
                   /// Fg-Emit
                   _LitImage(
                       color: emitColor,
                       imgSrc: AssetPaths.titleFgEmit,
+                      pulseEffect: _pulseEffect,
                       lightAmt: _finalEmitLightAmt),
 
                   Positioned.fill(
@@ -93,6 +204,7 @@ class _TitleScreenState extends State<TitleScreen> {
                       difficulty: _difficulty,
                       onDifficultyPressed: _handleDifficultyPressed,
                       onDifficultyFoucused: _handleDifficultyFocused,
+                      onStartPressed: _handleStartPressed,
                     ),
                   )
                 ],
@@ -105,19 +217,27 @@ class _TitleScreenState extends State<TitleScreen> {
 
 class _LitImage extends StatelessWidget {
   const _LitImage(
-      {required this.color, required this.imgSrc, required this.lightAmt});
+      {required this.color,
+      required this.imgSrc,
+      required this.pulseEffect,
+      required this.lightAmt});
   final Color color;
   final String imgSrc;
+  final AnimationController pulseEffect;
   final double lightAmt;
 
   @override
   Widget build(BuildContext context) {
     final hsl = HSLColor.fromColor(color);
-    return Image.asset(
-      imgSrc,
-      color: hsl.withLightness(hsl.lightness * lightAmt).toColor(),
-      colorBlendMode: BlendMode.modulate,
-    );
+    return ListenableBuilder(
+        listenable: pulseEffect,
+        builder: (context, child) {
+          return Image.asset(
+            imgSrc,
+            color: hsl.withLightness(hsl.lightness * lightAmt).toColor(),
+            colorBlendMode: BlendMode.modulate,
+          );
+        });
   }
 }
 

@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:focusable_control_builder/focusable_control_builder.dart';
 import 'package:gap/gap.dart';
+import 'package:provider/provider.dart';
 
 import '../assets.dart';
+import '../common/shader_effect.dart';
+import '../common/ticking_builder.dart';
 import '../common/ui_scaler.dart';
 import '../styles.dart';
 
@@ -14,11 +17,13 @@ class TitleScreenUi extends StatelessWidget {
     required this.difficulty,
     required this.onDifficultyPressed,
     required this.onDifficultyFoucused,
+    required this.onStartPressed,
   });
 
   final int difficulty;
   final void Function(int difficulty) onDifficultyPressed;
   final void Function(int? difficulty) onDifficultyFoucused;
+  final VoidCallback onStartPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +52,7 @@ class TitleScreenUi extends StatelessWidget {
                     bottom: 20,
                     right: 40,
                   ),
-                  child: _StartBtn(onpressed: () {}),
+                  child: _StartBtn(onpressed: onStartPressed),
                 )),
           ),
         ],
@@ -61,7 +66,7 @@ class _TitleText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    Widget content = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -99,6 +104,23 @@ class _TitleText extends StatelessWidget {
             )
       ],
     );
+    return Consumer<FragmentPrograms?>(builder: (context, fragmentprograms, _) {
+      if (fragmentprograms == null) return content;
+      return TickingBuilder(builder: (context, time) {
+        return AnimatedSampler((image, size, canvas) {
+          const double overrawPx = 30;
+          final shader = fragmentprograms.ui.fragmentShader();
+          shader
+            ..setFloat(0, size.width)
+            ..setFloat(1, size.height)
+            ..setFloat(2, time)
+            ..setImageSampler(0, image);
+          Rect rect = Rect.fromLTWH(-overrawPx, -overrawPx,
+              size.width + overrawPx, size.height + overrawPx);
+          canvas.drawRect(rect, Paint()..shader = shader);
+        }, child: content);
+      });
+    });
   }
 }
 
